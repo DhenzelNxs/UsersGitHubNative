@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {Keyboard, ActivityIndicator, Alert, Text, View} from 'react-native';
 import PropTypes from 'prop-types';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import Reactotron from 'reactotron-react-native';
 
 import AsyncStorage from '@react-native-community/async-storage';
 import {
@@ -20,6 +21,7 @@ import {
   EmptyText,
 } from './styles';
 import api from '../../services/api';
+import reactotron from 'reactotron-react-native';
 
 export default class Main extends Component {
   static navigationOptions = {
@@ -34,6 +36,7 @@ export default class Main extends Component {
 
   state = {
     newUser: '',
+    filters: [],
     users: [],
     loading: false,
   };
@@ -47,7 +50,7 @@ export default class Main extends Component {
   }
 
   componentDidUpdate(_, prevState) {
-    const {users} = this.state;
+    const {users, newUser} = this.state;
 
     if (prevState.users !== this.state.users) {
       AsyncStorage.setItem('users', JSON.stringify(users));
@@ -58,6 +61,19 @@ export default class Main extends Component {
     const {navigation} = this.props;
     await AsyncStorage.setItem('UserAtual', item);
     navigation.navigate('User');
+  };
+
+  handleSearchUser = text => {
+    this.setState({newUser: text});
+    if (text.length > 0) {
+      const {users, newUser} = this.state;
+      const filteredUsers = users.filter(user =>
+        user.login.toLowerCase().includes(newUser.toLowerCase()),
+      );
+      this.setState({filters: filteredUsers});
+    } else {
+      this.setState({filters: []}); // Limpar filtros se a caixa de pesquisa estiver vazia
+    }
   };
 
   handleAddUser = async () => {
@@ -89,6 +105,13 @@ export default class Main extends Component {
       });
 
       Keyboard.dismiss();
+      Alert.alert('AVISO!', 'Usuário adicionado com sucesso!', [
+        {
+          text: 'conferir',
+          onPress: () => {},
+          style: 'default',
+        },
+      ]);
     } catch (error) {
       Alert.alert(
         'Error ao adicionar usuário',
@@ -116,8 +139,8 @@ export default class Main extends Component {
   };
 
   render() {
-    const {users, newUser, loading} = this.state;
-
+    const {users, newUser, loading, filters} = this.state;
+    const displayedUsers = newUser ? filters : users; // Exibir usuários filtrados se houver um novo usuário pesquisado
     return (
       <Container>
         <Form>
@@ -126,8 +149,8 @@ export default class Main extends Component {
             autoCapitalize="none"
             placeholder="Digite o nome do Usuário"
             value={newUser}
-            onChangeText={text => this.setState({newUser: text})}
-            returnKeyType="send"
+            onChangeText={text => this.handleSearchUser(text)}
+            returnKeyType="search"
             onSubmitEditing={this.handleAddUser}
           />
 
@@ -141,7 +164,7 @@ export default class Main extends Component {
         </Form>
 
         <List
-          data={users}
+          data={displayedUsers}
           keyExtractor={user => user.login}
           ListEmptyComponent={
             <EmptyText>Não há Usuários Cadastrados</EmptyText>
