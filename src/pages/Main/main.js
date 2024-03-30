@@ -1,5 +1,11 @@
 import React, {Component} from 'react';
-import {Keyboard, ActivityIndicator, Alert, Text, View} from 'react-native';
+import {
+  Keyboard,
+  ActivityIndicator,
+  Alert,
+  View,
+  BackHandler,
+} from 'react-native';
 import PropTypes from 'prop-types';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import Reactotron from 'reactotron-react-native';
@@ -41,12 +47,26 @@ export default class Main extends Component {
     loading: false,
   };
 
+  backAction = () => {
+    Alert.alert('AVISO!', 'Tem certeza de que deseja sair do aplicativo ?', [
+      {
+        text: 'Cancel',
+        onPress: () => null,
+        style: 'cancel',
+      },
+      {text: 'Sim', onPress: () => BackHandler.exitApp()},
+    ]);
+    return true;
+  };
+
   async componentDidMount() {
     const users = await AsyncStorage.getItem('users');
 
     if (users) {
       this.setState({users: JSON.parse(users)});
     }
+
+    BackHandler.addEventListener('hardwareBackPress', this.backAction);
   }
 
   componentDidUpdate(_, prevState) {
